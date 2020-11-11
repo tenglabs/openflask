@@ -6,7 +6,7 @@ from flaskblog import app, db, bcrypt
 from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm,TransferForm
 from flaskblog.models import User, Post
 from flask_login import login_user, current_user, logout_user, login_required
-
+import decimal
 
 @app.route("/")
 @app.route("/home")
@@ -117,10 +117,12 @@ def post(post_id):
             flash('Sorry, not enough balance on your wallet', 'danger')
             return redirect(url_for('post', post_id=post.id))
         else:
-            formdata = float(form.curr_bal.data)
+            formdata = form.curr_bal.data
             percent  =  (10/100) * formdata
-            current_user.curr_bal = current_user.curr_bal - percent
-            post.author.curr_bal = post.author.curr_bal + percent
+
+            current_user.curr_bal = current_user.curr_bal - form.curr_bal.data
+            result = form.curr_bal.data - decimal.Decimal(percent)
+            post.author.curr_bal = post.author.curr_bal + decimal.Decimal(result)
 
             db.session.commit()
             flash('Your funds has been transfered with 10% fee ', 'success')

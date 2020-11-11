@@ -16,7 +16,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(60), nullable=False)
     posts = db.relationship('Post', backref='author', lazy=True)
     is_staff = db.Column(db.Boolean, default=False,nullable=True)
-    curr_bal = db.Column(db.Integer,default='22')
+    curr_bal = db.Column(db.Float(precision=2,asdecimal=True,decimal_return_scale=2),default='22')
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.image_file}', '{self.is_staff})"
