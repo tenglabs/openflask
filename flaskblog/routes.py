@@ -3,7 +3,7 @@ import secrets
 from PIL import Image
 from flask import render_template, url_for, flash, redirect, request, abort
 from flaskblog import app, db, bcrypt
-from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm
+from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm,TransferForm
 from flaskblog.models import User, Post
 from flask_login import login_user, current_user, logout_user, login_required
 
@@ -107,10 +107,26 @@ def new_post():
                            form=form, legend='New Post')
 
 
-@app.route("/post/<int:post_id>")
+@app.route("/post/<int:post_id>",methods=['GET', 'POST'])
 def post(post_id):
     post = Post.query.get_or_404(post_id)
-    return render_template('post.html', title=post.title, post=post)
+    form = TransferForm()
+
+    if request.method == 'POST':
+        if current_user.curr_bal < form.curr_bal.data :
+            flash('Sorry, not enough balance on your wallet', 'danger')
+            return redirect(url_for('post', post_id=post.id))
+        else:
+            formdata = float(form.curr_bal.data)
+            percent  =  (10/100) * formdata
+            current_user.curr_bal = current_user.curr_bal - percent
+            post.author.curr_bal = post.author.curr_bal + percent
+
+            db.session.commit()
+            flash('Your funds has been transfered with 10% fee ', 'success')
+            return redirect(url_for('post', post_id=post.id))
+
+    return render_template('post.html', title=post.title, post=post,form=form)
 
 
 @app.route("/post/<int:post_id>/update", methods=['GET', 'POST'])
@@ -125,7 +141,8 @@ def update_post(post_id):
         post.content = form.content.data
 
         if current_user.curr_bal < 5:
-            return ('not enough balance')
+            flash('Sorry, not enough balance on your wallet', 'danger')
+            return redirect(url_for('post', post_id=post.id))
         else:
             current_user.curr_bal = current_user.curr_bal - int(5)
 
